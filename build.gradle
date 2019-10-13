@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group 'fr.griffon'
+version '0.1-SNAPSHOT'
+applicationName = 'KissSimulator'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile 'org.scream3r:jssc:2.8.0'
+
+    compile group: 'net.java.jinput', name: 'jinput', version: '2.0.9'
+}
+
+application {
+	mainClassName 'fr.griffon.KissSimulator'
+}
+
+run {
+	systemProperty "java.library.path", "nativeLib/"
+}
+
