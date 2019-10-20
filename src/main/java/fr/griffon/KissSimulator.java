@@ -59,7 +59,7 @@ public class KissSimulator {
         index++;
         System.out.println("Yaw Filter : " + bytes[index]);
         index++;
-        System.out.println("NF Roll on/off : " + OnOff.valueToString(bytes[index] + 1));
+        System.out.println("NF Roll on/off : " + OnOff.valueToString(bytes[index]));
         index++;
         int value = ByteUtils.bytesToInt16(new byte[]{bytes[index], bytes[index + 1]});
         index += 2;
@@ -68,7 +68,7 @@ public class KissSimulator {
         index += 2;
         System.out.println("NF Roll cutoff : " + value);
 
-        System.out.println("NF Pitch on/off : " + OnOff.valueToString(bytes[index] + 1));
+        System.out.println("NF Pitch on/off : " + OnOff.valueToString(bytes[index]));
         index++;
         value = ByteUtils.bytesToInt16(new byte[]{bytes[index], bytes[index + 1]});
         index += 2;
@@ -232,11 +232,11 @@ public class KissSimulator {
     }
 
     enum OnOff {
-        ON,
-        OFF;
+        OFF,
+        ON;
 
         public static String valueToString(int position) {
-            if (position < 0 || position > values().length) {
+            if (position < 0 || position >= values().length) {
                 System.out.println(position);
                 return "bad value";
             }
@@ -255,7 +255,7 @@ public class KissSimulator {
         VeryLow;
 
         public static String valueToString(int position) {
-            if (position < 0 || position > values().length) {
+            if (position < 0 || position >= values().length) {
                 System.out.println(position);
                 return "bad value";
             }
@@ -312,11 +312,7 @@ public class KissSimulator {
                                 simulateResponseOfGetFilters();
                                 break;
                             case SET_FILTERS:
-                                byte[] filtersSetting = new byte[readed.length - 1];
-                                for (int i = 1; i < readed.length; i++) {
-                                    filtersSetting[i - 1] = readed[i];
-                                }
-                                logFitlersFromSetFiltersbytes(filtersSetting);
+                                logFitlersFromSetFiltersbytes(readed);
                                 break;
                             default:
                                 System.out.print("unknown instruction :");

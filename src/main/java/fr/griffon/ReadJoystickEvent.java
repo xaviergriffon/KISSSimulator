@@ -64,6 +64,7 @@ public class ReadJoystickEvent implements Runnable {
         }
 
         for (int i = 0; i < controllers.length; i++) {
+            //System.out.println(controllers[i].getName());
             if (joystickController.getName().equals(controllers[i].getName())) {
                 controllerToListen.add(controllers[i]);
             }
