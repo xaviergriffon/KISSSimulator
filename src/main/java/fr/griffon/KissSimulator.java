@@ -6,6 +6,7 @@ import jssc.SerialPortEvent;
 import jssc.SerialPortEventListener;
 import jssc.SerialPortException;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -83,6 +84,29 @@ public class KissSimulator {
         index++;
     }
 
+    public static void logVTXfromSetVTX(byte[] bytes) {
+        int index = 2;
+        System.out.println("VTX Type : " + ByteUtils.byteToInt8(bytes[index]));
+        index++;
+        int value = ByteUtils.byteToInt8(bytes[index]);
+        int channel = value;
+        System.out.println("N° channel : " + value);
+
+        value = channel / 8;
+        System.out.println("Band : " + Band.valueToString(value));
+        value = channel % 8;
+        System.out.println("Channel : " + (value + 1));
+        index++;
+
+        value = ByteUtils.bytesToInt16(new byte[]{bytes[index], bytes[index + 1]});
+        index += 2;
+        System.out.println("Low Power : " + value);
+        value = ByteUtils.bytesToInt16(new byte[]{bytes[index], bytes[index + 1]});
+        index += 2;
+        System.out.println("Max Power : " + value);
+
+    }
+
     public static void logGPSFromGetGPSbytes(byte[] bytes) {
         int latitudeIdx = 0; // 32
         int longitudeIdx = 4; // 32
@@ -107,8 +131,8 @@ public class KissSimulator {
 
         System.out.print("fix : ");
         int fix = ByteUtils.bytesToInt8(ByteUtils.extractByte(bytes, fixIdx + 2, 1));
-        System.out.println(fix);
-
+        System.out.println(fix >> 7);
+        System.out.print("sat : ");
         System.out.println(fix & 0x7F);
 
     }
@@ -157,6 +181,7 @@ public class KissSimulator {
             }
             System.out.println("Port closed: " + serialPort.closePort());
             readJoystickEvent.stop();
+            gpsBuffer.stop();;
             Thread.sleep(500);
         } catch (SerialPortException | InterruptedException ex) {
             System.out.println(ex);
@@ -192,9 +217,14 @@ public class KissSimulator {
         GET_RATES(0x4D),
         SET_RATES(0x4E),
         GET_TPAS(0x4B),
+        SET_TPAS(0x4C),
         GET_GPS(0x54),
         GET_FILTERS(0x47),
-        SET_FILTERS(0x48);
+        SET_FILTERS(0x48),
+        GET_VTX(0x45),
+        SET_VTX(0x46),
+        GET_DSETPOINT(0x52),
+        SET_DSETPOINT(0x53);
 
         private static Map<Byte, KissCommand> cache = null;
         private byte byteCommand;
@@ -264,6 +294,22 @@ public class KissSimulator {
         }
     }
 
+    enum Band {
+        A,
+        B,
+        E,
+        FS,
+        RB;
+        public static String valueToString(int position) {
+            if (position < 0 || position >= values().length) {
+                System.out.println(position);
+                return "bad value";
+            }
+
+            return values()[position].toString();
+        }
+    }
+
     private class KissSimulatorEventListener implements SerialPortEventListener {
         private byte[] serialBuffer = new byte[200];
 
@@ -313,6 +359,12 @@ public class KissSimulator {
                                 break;
                             case SET_FILTERS:
                                 logFitlersFromSetFiltersbytes(readed);
+                                break;
+                            case GET_VTX:
+                                simulateResponseOfGetVTX();
+                                break;
+                            case SET_VTX:
+                                logVTXfromSetVTX(readed);
                                 break;
                             default:
                                 System.out.print("unknown instruction :");
@@ -396,6 +448,11 @@ public class KissSimulator {
         private void simulateResponseOfGetFilters() throws SerialPortException {
             byte[] data = ByteUtils.hexStringToByteArray("47 0E 01 23 00 00 C8 00 64 00 00 C8 00 64 02 01 11");
             write(KissCommand.GET_FILTERS, data);
+        }
+
+        private void simulateResponseOfGetVTX() throws SerialPortException {
+            byte[] data = ByteUtils.hexStringToByteArray("45 06 03 26 00 32 03 20 31");
+            write(KissCommand.GET_VTX, data);
         }
 
         private void addShortAtPosition(int position, short data) {

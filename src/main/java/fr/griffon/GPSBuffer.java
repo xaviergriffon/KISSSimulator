@@ -40,6 +40,12 @@ public class GPSBuffer {
         }
     }
 
+    public void stop() {
+        if (currentRun != null) {
+            currentRun.stop();
+        }
+    }
+
     public String getGPSHex() {
         if(gpsData != null) {
             synchronized (gpsData) {

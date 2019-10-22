@@ -89,7 +89,7 @@ public class ByteUtils {
     }
 
     public static int byteToInt8(byte b) {
-        return (b << 8) & 0x0000ff00;
+        return (b & 0xFF);
     }
 
     public static byte[] hexStringToByteArray(String s) {
