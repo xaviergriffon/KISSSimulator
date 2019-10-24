@@ -31,7 +31,7 @@ public class KissSimulator {
     public static void main(String[] args) {
         String porName = "/dev/cu.SLAB_USBtoUART";
         String gpsDataFileName = null; //"receveiveData_10_100.byte";
-        ReadJoystickEvent.JoystickController joystickController = ReadJoystickEvent.JoystickController.TARANIS;
+        ReadJoystickEvent.JoystickController joystickController = ReadJoystickEvent.JoystickController.XBOX360CONTROLLER;
         KissSimulator kissSimulator = new KissSimulator(porName, gpsDataFileName, joystickController);
         kissSimulator.setLogSetCommand(true);
         kissSimulator.start();
@@ -86,7 +86,7 @@ public class KissSimulator {
 
     public static void logVTXfromSetVTX(byte[] bytes) {
         int index = 2;
-        System.out.println("VTX Type : " + ByteUtils.byteToInt8(bytes[index]));
+        System.out.println("VTX Type : " + VTXType.valueToString(ByteUtils.byteToInt8(bytes[index])));
         index++;
         int value = ByteUtils.byteToInt8(bytes[index]);
         int channel = value;
@@ -291,6 +291,30 @@ public class KissSimulator {
             }
 
             return values()[position].toString();
+        }
+    }
+
+    enum VTXType {
+        None("--"),
+        Dummy("DUMMY VTX"),
+        IRC("IRC TRAMP HV"),
+        TBS_Unify("TBS UNIFY SMART AUDIO"),
+        TBS_EVO("TBS EVO CROSSFIRE");
+
+        private String description;
+        private VTXType(String description) {
+            this.description = description;
+        }
+        public String getDescription() {
+            return description;
+        }
+        public static String valueToString(int position) {
+            if (position < 0 || position >= values().length) {
+                System.out.println(position);
+                return "bad value";
+            }
+
+            return values()[position].getDescription();
         }
     }
 
