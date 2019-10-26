@@ -1,6 +1,9 @@
+import org.gradle.internal.os.OperatingSystem;
+
 plugins {
     id 'java'
     id 'application'
+    id "de.undercouch.download" version "4.0.1"
 }
 
 group 'fr.griffon'
@@ -28,3 +31,39 @@ run {
 	systemProperty "java.library.path", "nativeLib/"
 }
 
+task deleteNativeLib (type: Delete){
+    delete 'nativeLib'
+    followSymlinks = true
+}
+
+task downloadJInputNativeLib(dependsOn: deleteNativeLib,type: Download) {
+
+    src 'https://search.maven.org/remotecontent?filepath=net/java/jinput/jinput/2.0.9/jinput-2.0.9-natives-all.jar'
+    dest new File(buildDir, '/jinputNativeLib/jinputNativeLib.zip')
+}
+
+task downloadAndUnzipJInputNativeLib(dependsOn: downloadJInputNativeLib, type: Copy) {
+    def outputDir = file("${buildDir}/jinputNativeLib")
+    from zipTree(downloadJInputNativeLib.dest)
+    into outputDir
+}
+
+task buildNativeLibDir(dependsOn: downloadAndUnzipJInputNativeLib, type: Copy) {
+    switch (OperatingSystem.current()) {
+        case OperatingSystem.LINUX:
+            from file("$buildDir/jinputNativeLib/libjinput-linux64.so")
+            into file("nativeLib")
+            break ;
+        case OperatingSystem.MAC_OS:
+            from file("$buildDir/jinputNativeLib/libjinput-osx.jnilib")
+            into file("nativeLib")
+            break ;
+        case OperatingSystem.WINDOWS:
+            from("$buildDir/jinputNativeLib") {
+                include '**/*.dll'
+                exclude 'META-INF'
+            }
+            into "nativeLib"
+            break ;
+    }
+}

@@ -29,9 +29,9 @@ public class KissSimulator {
     }
 
     public static void main(String[] args) {
-        String porName = "/dev/cu.SLAB_USBtoUART";
+        String porName = OsUtils.isOSX() ? "/dev/cu.SLAB_USBtoUART" : OsUtils.isWindows() ? "COM4" : null;
         String gpsDataFileName = null; //"receveiveData_10_100.byte";
-        ReadJoystickEvent.JoystickController joystickController = ReadJoystickEvent.JoystickController.XBOX360CONTROLLER;
+        ReadJoystickEvent.JoystickController joystickController = ReadJoystickEvent.JoystickController.TARANIS;
         KissSimulator kissSimulator = new KissSimulator(porName, gpsDataFileName, joystickController);
         kissSimulator.setLogSetCommand(true);
         kissSimulator.start();

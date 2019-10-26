@@ -2,9 +2,7 @@ package fr.griffon;
 
 import net.java.games.input.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Capteur de joystick
@@ -64,9 +62,10 @@ public class ReadJoystickEvent implements Runnable {
         }
 
         for (int i = 0; i < controllers.length; i++) {
-            //System.out.println(controllers[i].getName());
-            if (joystickController.getName().equals(controllers[i].getName())) {
-                controllerToListen.add(controllers[i]);
+            Controller controller = controllers[i];
+            System.out.println(controller.getName());
+            if (joystickController.getName().equals(controller.getName())) {
+                controllerToListen.add(controller);
             }
         }
         while (run) {
@@ -75,46 +74,45 @@ public class ReadJoystickEvent implements Runnable {
                 controller.poll();
                 EventQueue queue = controller.getEventQueue();
                 Event event = new Event();
-                while (queue.getNextEvent(event)) {
+                JoystickController joystickController = JoystickController.getByName(controller.getName());
+                JoystickAxesNames axesNames = joystickController != null ? joystickController.getAxesNames() : null;
+                while (axesNames != null && queue.getNextEvent(event)) {
                     Component comp = event.getComponent();
-                    String compName = comp.getName();
+                    String compName = comp.getIdentifier().getName();
                     //System.out.println(compName);
                     float value = event.getValue();
+                    boolean xboxController = JoystickController.XBOX360CONTROLLER.equals(joystickController) || JoystickController.XBOXWIRELESSCONTROLLER.equals(joystickController);
                     if (comp.isAnalog()) {
-                        if (JoystickController.TARANIS.getName().equals(controller.getName())) {
+                        // TODO : déléguer le calcul à axesNames
+                        if (JoystickController.TARANIS.equals(joystickController)) {
                             value = (value * 500 + 1500);
-                            int roundValue = Math.round(value);
-                            if ("x".equals(compName)) {
-                                yaw = roundValue;
-                            } else if ("rx".equals(compName)) {
-                                roll = roundValue;
-                            } else if ("y".equals(compName)) {
-                                pitch = roundValue;
-                            } else if ("z".equals(compName)) {
-                                throttle = roundValue;
-                            } else if ("ry".equals(compName)) {
-                                armed = roundValue > 1000;
-                            } else {
-                                System.out.println(compName);
-                                System.out.println(roundValue);
-                            }
-                        } else if (JoystickController.XBOX360CONTROLLER.getName().equals(controller.getName())) {
-                            value = (value * 500 * (compName.endsWith("y") ? -1 : 1) + 1500);
-                            int roundValue = Math.round(value);
-                            if ("x".equals(compName)) {
-                                yaw = roundValue;
-                            } else if ("rx".equals(compName)) {
-                                roll = roundValue;
-                            } else if ("ry".equals(compName)) {
-                                pitch = roundValue;
-                            } else if ("y".equals(compName)) {
-                                throttle = roundValue;
-                            }
+                        } else if (xboxController) {
+                            value = (value * 500 * (axesNames.getPitch().equals(compName) || axesNames.getThrottle().equals(compName) ? -1 : 1) + 1500);
+                        }
+                        int roundValue = Math.round(value);
+                        if (axesNames.getYaw().equals(compName)) {
+                            yaw = roundValue;
+                        } else if (axesNames.getRoll().equals(compName)) {
+                            roll = roundValue;
+                        } else if (axesNames.getPitch().equals(compName)) {
+                            pitch = roundValue;
+                        } else if (axesNames.getThrottle().equals(compName)) {
+                            throttle = roundValue;
+                        } else if (axesNames.getArmed().equals(compName)) {
+                            armed = roundValue > 1000;
+                        } else {
+                            System.out.println(compName);
+                            System.out.println(roundValue);
                         }
                     } else {
-                        if (JoystickController.XBOX360CONTROLLER.getName().equals(controller.getName())) {
-                            if ("8".equals(compName) && value == 1) {
-                                armed = !armed;
+                        if (xboxController) {
+                            if (axesNames.getArmed().equals(compName)) {
+                                if (value == 1) {
+                                    armed = !armed;
+                                }
+                            } else {
+                                System.out.println(compName);
+                                System.out.println(value);
                             }
                         }
                     }
@@ -129,11 +127,18 @@ public class ReadJoystickEvent implements Runnable {
         }
     }
 
+    // TODO : A revoir pour faire une configuration dans un fichier
+
     enum JoystickController {
-        XBOX360CONTROLLER("Xbox 360 Wired Controller"),
-        TARANIS("FrSky Taranis Joystick");
+        XBOX360CONTROLLER(OsUtils.isWindows() ? "Controller (XBOX 360 For Windows)"  : "Xbox 360 Wired Controller"),
+        TARANIS("FrSky Taranis Joystick"),
+        XBOXWIRELESSCONTROLLER(OsUtils.isOSX() ? "Xbox Wireless Controller" : "vJoy Device");
+
+
+        private static Map<String, JoystickController> controllerByName;
 
         private String name;
+        private JoystickAxesNames axesNames;
 
         JoystickController(String name) {
             this.name = name;
@@ -142,5 +147,80 @@ public class ReadJoystickEvent implements Runnable {
         public String getName() {
             return name;
         }
-    }
+
+        public JoystickAxesNames getAxesNames() {
+            if (axesNames == null) {
+                this.axesNames = JoystickAxesNames.axesNamesForJoystick(this);
+            }
+            return axesNames;
+        }
+
+        public static JoystickController getByName(String name) {
+            if (controllerByName == null){
+                controllerByName = new HashMap<>();
+                for (JoystickController joystickController : JoystickController.values()) {
+                    controllerByName.put(joystickController.getName(), joystickController);
+                }
+            }
+            return controllerByName.get(name);
+        }
+
+     }
+
+     private static class JoystickAxesNames {
+        private String yaw;
+        private String roll;
+        private String pitch;
+        private String throttle;
+        private String armed;
+
+        public JoystickAxesNames(String yaw, String roll, String pitch,String throttle, String armed) {
+            this.yaw = yaw;
+            this.roll = roll;
+            this.pitch = pitch;
+            this.throttle = throttle;
+            this.armed = armed;
+        }
+
+         public String getYaw() {
+             return yaw;
+         }
+
+         public String getRoll() {
+             return roll;
+         }
+
+         public String getPitch() {
+             return pitch;
+         }
+
+         public String getThrottle() {
+             return throttle;
+         }
+
+         public String getArmed() {
+             return armed;
+         }
+
+         private static Map<JoystickController, JoystickAxesNames> joystickAxesNamesByControllers = new HashMap<>();
+
+        public static JoystickAxesNames axesNamesForJoystick(JoystickController joystickController) {
+            JoystickAxesNames axesNames = joystickAxesNamesByControllers.get(joystickController);
+            if (axesNames == null) {
+                switch (joystickController) {
+                    case TARANIS:
+                        axesNames = new JoystickAxesNames("x","rx",OsUtils.isOSX() ? "ry" : "y","z","ry");
+                        break;
+                    case XBOX360CONTROLLER:
+                        axesNames = new JoystickAxesNames("x","rx","ry","y",OsUtils.isOSX() ? "8" :"7");
+                        break;
+                    case XBOXWIRELESSCONTROLLER:
+                        axesNames = new JoystickAxesNames("x","z","rz","y","11");
+                        break;
+                }
+                joystickAxesNamesByControllers.put(joystickController, axesNames);
+            }
+            return axesNames;
+        }
+     }
 }
