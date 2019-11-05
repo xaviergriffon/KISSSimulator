@@ -1,5 +1,7 @@
 package fr.griffon;
 
+import fr.griffon.enums.KissCommand;
+import fr.griffon.utils.ByteUtils;
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
 import jssc.SerialPortEventListener;
@@ -21,11 +23,11 @@ public class CollectData {
     public static void main(String[] args) {
         // Durée en millisecondes
         long duration = 5 * 60 * 1000;
-        KissSimulator.KissCommand command = KissSimulator.KissCommand.GET_GPS;
+        KissCommand command = KissCommand.GET_GPS;
         String portName = "/dev/cu.SLAB_USBtoUART";
         String fileName = "receveiveData.byte";
 
-        command = KissSimulator.KissCommand.GET_GPS;
+        command = KissCommand.GET_GPS;
 
         CollectData collectData = new CollectData(command, duration, portName, fileName);
         collectData.start();
@@ -37,9 +39,9 @@ public class CollectData {
     private Date startDate;
     private CollectDataListener collectDataListener;
     private long extractDuration;
-    private KissSimulator.KissCommand command;
+    private KissCommand command;
 
-    public CollectData(KissSimulator.KissCommand command, long extractDuration, String portName, String fileName) {
+    public CollectData(KissCommand command, long extractDuration, String portName, String fileName) {
         this.command = command;
         this.extractDuration = extractDuration;
         serialPort = new SerialPort(portName);
@@ -78,7 +80,7 @@ public class CollectData {
         }
     }
 
-    private void sendCommand(KissSimulator.KissCommand command) throws SerialPortException {
+    private void sendCommand(KissCommand command) throws SerialPortException {
         byte[] toWrite;
         if (command.isNeedChecksum()) {
             int checksum = ByteUtils.computeChecksum(EMPTY_BYTE_ARRAY);

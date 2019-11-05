@@ -1,0 +1,77 @@
+{
+  /*
+   * Port of device
+   * Example :
+   *    on OSX -> "/dev/cu.SLAB_USBtoUART"
+   *    on Windows -> "COM4"
+   */
+  "portName": "/dev/cu.SLAB_USBtoUART",
+  "logSetCommand" : true,
+  "logGetCommand" : true,
+  "commandResponses" : [
+    // Setting
+    {
+      "hexCommand": "30",
+      "hexResponse": "05 B6 0F A0 13 EC 14 82 00 30 00 41 00 32 2A 30 31 38 00 00 0F A0 00 28 27 10 00 00 00 00 07 D0 07 D0 06 72 02 8A 02 8A 02 80 00 DC 00 DC 00 D2 00 11 00 00 00 02 00 00 00 06 00 14 01 F4 00 46 03 E8 05 DC 00 00 00 00 00 00 00 14 21 45 00 02 CB 01 39 37 35 32 30 37 51 19 00 30 00 1D 75 01 B8 00 C8 00 C8 00 01 00 01 00 1E 32 1E 00 00 64 00 00 80 00 94 00 A8 82 64 46 26 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 C8 00 64 00 00 C8 00 64 23 03 00 19 03 20 00 00 00 00 00 00 03 03 03 00 00 02 01 00 25 01 00 00 64 00 00 50 00 F0 21 F6 FF 00 49"
+    },
+    // GPS
+    {
+      "hexCommand": "54",
+      "hexResponse": "54 0F 1b 40 c3 90 02 d6 85 a6 00 1C 1F 3F 01 47 8A ca",
+      "collectedDatafileName": "receveiveData_10_100.byte"
+    },
+    // PID
+    {
+      "hexCommand": "43",
+      "hexResponse": "43 12 0F A0 00 30 2A 30 13 EC 00 41 31 38 14 82 00 32 00 00 D7"
+    },
+    // Rate
+    {
+      "hexCommand": "4D",
+      "hexResponse": "4D 12 07 D0 02 8A 00 DC 07 D0 02 8A 00 DC 06 72 02 80 00 D2 E4"
+    },
+    // TPA
+    {
+      "hexCommand": "4B",
+      "hexResponse": "4B 0D 01 B8 00 C8 00 C8 00 1E 32 1E 00 00 64 6E"
+    },
+    // Filters
+    {
+      "hexCommand": "47",
+      "hexResponse": "47 0E 01 23 00 00 C8 00 64 00 00 C8 00 64 02 01 11"
+    },
+    // VTX
+    {
+      "hexCommand": "45",
+      "hexResponse": "45 06 03 26 00 32 03 20 31"
+    }
+  ],
+  "inputSetups": [
+    {
+      "name": "FrSky Taranis Joystick",
+      "yaw" : "x",
+      "roll" :  "rx",
+      "pitch" : "ry", // On OSX : ry, On Windows : y
+      "throttle" : "z",
+      "armed" : "ry"
+    },
+    {
+      "name": "Xbox 360 Wired Controller", // On OSX : "Xbox 360 Wired Controller", on Windows : "Controller (XBOX 360 For Windows)"
+      "YZSign" : -1,
+      "yaw" : "x",
+      "roll" :  "rx",
+      "pitch" : "ry",
+      "throttle" : "y",
+      "armed" : "8" // On OSX : 8, On Windows : 7
+    },
+    {
+      "name": "Xbox Wireless Controller", // On OSX : "Xbox Wireless Controller", on Windows : ???
+      "YZSign" : -1,
+      "yaw" : "x",
+      "roll" :  "z",
+      "pitch" : "rz",
+      "throttle" : "y",
+      "armed" : "11"
+    }
+  ]
+}

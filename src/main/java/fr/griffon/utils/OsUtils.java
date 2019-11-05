@@ -1,4 +1,4 @@
-package fr.griffon;
+package fr.griffon.utils;
 
 public final class OsUtils
 {

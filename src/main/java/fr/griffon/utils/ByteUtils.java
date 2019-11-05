@@ -1,4 +1,4 @@
-package fr.griffon;
+package fr.griffon.utils;
 
 import java.nio.ByteBuffer;
 
@@ -71,6 +71,10 @@ public class ByteUtils {
         }
         return sb.toString();
 
+    }
+
+    public static String byteToHex(byte hashInByte) {
+        return String.format("%02x", hashInByte);
     }
 
     public static int bytesToInt32(byte[] bytes) {

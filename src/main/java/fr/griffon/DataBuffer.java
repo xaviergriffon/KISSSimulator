@@ -1,25 +1,30 @@
 package fr.griffon;
 
+import fr.griffon.utils.ByteUtils;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Buffer de données GPS.
+ * Buffer de données.
  * Il permet de lire un fichier construit avec CollectData et de distribuer les données en respectant leurs écarts dans le temps.
  */
-public class GPSBuffer {
-    private static String defaultGPSHex = "54 0F 1b 40 c3 90 02 d6 85 a6 00 1C 1F 3F 01 47 8A ca";
+public class DataBuffer {
+    private String defaultDataHex;
     private Date startDate;
-    private GPSData gpsData = null;
-    private GPSSetter currentRun = null;
+    private Data data = null;
+    private DataSetter currentRun = null;
     private String fileName;
 
-    public GPSBuffer(String fileName) {
+    public DataBuffer(String fileName, String defaultDataHex) {
         this.fileName = fileName;
+        Objects.requireNonNull(defaultDataHex);
+        this.defaultDataHex = defaultDataHex;
     }
 
     public void initAndStartBuffer() {
@@ -28,9 +33,9 @@ public class GPSBuffer {
                 currentRun.stop();
             }
             if (fileName != null) {
-                List<GPSData> buffer = buildBuffer(fileName);
+                List<Data> buffer = buildBuffer(fileName);
 
-                currentRun = new GPSSetter(this, buffer);
+                currentRun = new DataSetter(this, buffer);
                 Thread thread = new Thread(currentRun);
                 thread.start();
             }
@@ -46,37 +51,37 @@ public class GPSBuffer {
         }
     }
 
-    public String getGPSHex() {
-        if(gpsData != null) {
-            synchronized (gpsData) {
-                return gpsData != null ? gpsData.gpsHex : defaultGPSHex;
+    public String getDataHex() {
+        if(data != null) {
+            synchronized (data) {
+                return data != null ? data.dataHex : defaultDataHex;
             }
         }
-        return defaultGPSHex;
+        return defaultDataHex;
     }
 
-    private void setGPSData(GPSData gpsData) {
-        synchronized (gpsData) {
-            this.gpsData = gpsData;
+    private void setData(Data data) {
+        synchronized (data) {
+            this.data = data;
         }
     }
 
-    public List<GPSData> buildBuffer(String fileName) throws IOException {
-        List<GPSData> result = new ArrayList<>();
+    public List<Data> buildBuffer(String fileName) throws IOException {
+        List<Data> result = new ArrayList<>();
         byte[] bytes = Files.readAllBytes(Paths.get(fileName));
         int len = 0;
         int cursor = 0;
         byte[] buffer = new byte[Long.BYTES];
         Type type = Type.time;
-        GPSData gpsData = null;
+        Data data = null;
         for (byte b : bytes) {
             switch (type) {
                 case time:
                     buffer[cursor] = b;
                     cursor++;
                     if (cursor >= Long.BYTES) {
-                        gpsData = new GPSData();
-                        gpsData.time = ByteUtils.bytesToLong(buffer);
+                        data = new Data();
+                        data.time = ByteUtils.bytesToLong(buffer);
                         cursor = 0;
                         type = Type.len;
                     }
@@ -91,8 +96,8 @@ public class GPSBuffer {
                     buffer[cursor] = b;
                     cursor++;
                     if (cursor >= len) {
-                        gpsData.gpsHex = ByteUtils.bytesToHex(buffer);
-                        result.add(gpsData);
+                        data.dataHex = ByteUtils.bytesToHex(buffer);
+                        result.add(data);
                         // Passage au time
                         cursor = 0;
                         buffer = new byte[Long.BYTES];
@@ -111,47 +116,47 @@ public class GPSBuffer {
         data
     }
 
-    private static class GPSData {
+    private static class Data {
         public long time;
-        public String gpsHex;
+        public String dataHex;
     }
 
-    private class GPSSetter implements Runnable {
-        private GPSBuffer gpsBuffer;
-        private List<GPSData> buffer;
+    private class DataSetter implements Runnable {
+        private DataBuffer dataBuffer;
+        private List<Data> buffer;
         private boolean running = true;
         private int lastIndex = 0;
 
-        public GPSSetter(GPSBuffer gpsBuffer, List<GPSData> buffer) {
+        public DataSetter(DataBuffer dataBuffer, List<Data> buffer) {
             super();
             this.buffer = buffer;
-            this.gpsBuffer = gpsBuffer;
+            this.dataBuffer = dataBuffer;
         }
 
         @Override
         public void run() {
-            gpsBuffer.setGPSData(buffer.get(lastIndex));
+            dataBuffer.setData(buffer.get(lastIndex));
             while (running) {
                 if (lastIndex >= buffer.size()) {
                     lastIndex = 0;
-                    gpsBuffer.startDate = new Date();
+                    dataBuffer.startDate = new Date();
                 }
                 long duration = getDuration();
-                GPSData gpsData = null;
-                while (gpsData == null) {
+                Data data = null;
+                while (data == null) {
                     if (lastIndex < buffer.size() - 1) {
                         if (buffer.get(lastIndex + 1).time <= duration) {
                             lastIndex++;
-                            gpsData = buffer.get(lastIndex);
+                            data = buffer.get(lastIndex);
                         } else {
-                            gpsData = buffer.get(lastIndex);
+                            data = buffer.get(lastIndex);
                         }
                     } else if (lastIndex == (buffer.size() - 1)) {
-                        gpsData = buffer.get(lastIndex);
+                        data = buffer.get(lastIndex);
                         lastIndex++;
                     }
                 }
-                gpsBuffer.setGPSData(gpsData);
+                dataBuffer.setData(data);
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
@@ -161,7 +166,7 @@ public class GPSBuffer {
         }
 
         private long getDuration() {
-            return (new Date()).getTime() - gpsBuffer.startDate.getTime();
+            return (new Date()).getTime() - dataBuffer.startDate.getTime();
         }
 
         public void stop() {

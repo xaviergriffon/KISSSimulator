@@ -21,14 +21,12 @@ dependencies {
     compile 'org.scream3r:jssc:2.8.0'
 
     compile group: 'net.java.jinput', name: 'jinput', version: '2.0.9'
+
+    implementation 'com.google.code.gson:gson:2.8.6'
 }
 
 application {
 	mainClassName 'fr.griffon.KissSimulator'
-}
-
-run {
-	systemProperty "java.library.path", "nativeLib/"
 }
 
 task deleteNativeLib (type: Delete){
@@ -57,6 +55,7 @@ task buildNativeLibDir(dependsOn: downloadAndUnzipJInputNativeLib, type: Copy) {
         case OperatingSystem.MAC_OS:
             from file("$buildDir/jinputNativeLib/libjinput-osx.jnilib")
             into file("nativeLib")
+            rename 'libjinput-osx.jnilib', 'libjinput-osx.dylib'
             break ;
         case OperatingSystem.WINDOWS:
             from("$buildDir/jinputNativeLib") {
