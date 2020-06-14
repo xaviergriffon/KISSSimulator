@@ -10,14 +10,17 @@ import jssc.SerialPortEventListener;
 import jssc.SerialPortException;
 
 import java.nio.ByteBuffer;
+import java.util.Calendar;
 
 /**
  * Simulateur de communication avec une FC KISS.
  */
 public class KissSimulator {
+    public static final int KISS_VERSION = 122;
     private boolean running = true;
     private SerialPort serialPort;
     private ReadJoystickEvent readJoystickEvent;
+    private int mode = 0;
     private boolean logSetCommand = false;
     private boolean logGetCommand = false;
 
@@ -220,6 +223,9 @@ public class KissSimulator {
                             case GET_TELEMETRY:
                                 sendTelemetry();
                                 break;
+                            case GET_MESSAGE:
+                                sendMessage();
+                                break;
                             case SET_RATES:
                                 byte[] ratesSetting = new byte[readed.length - 1];
                                 for (int i = 1; i < readed.length; i++) {
@@ -244,6 +250,9 @@ public class KissSimulator {
                                 CommandResponse commandResponse = ConfigurationManager.getInstance().getConfiguration()
                                         .getResponseForCommand(ByteUtils.byteToHex(byteCommand));
                                 if (commandResponse != null) {
+                                    if ("54".equals(commandResponse.getHexCommand())) {
+                                        logGPSFromGetGPSbytes(commandResponse.getResponse());
+                                    }
                                     write(kissCommand, commandResponse.getResponse());
                                 } else {
                                     System.out.print("unknown instruction :");
@@ -274,6 +283,22 @@ public class KissSimulator {
             write(KissCommand.GET_TELEMETRY, byteBuffer.array());
         }
 
+        private void sendMessage() throws SerialPortException {
+            String message = "Text long de plus de 21";
+            int duration = 3000;//3s
+            int priority = 0;
+            ByteBuffer byteBuffer = ByteBuffer.allocate(2 + 1 + message.length() + 1);
+            byteBuffer.put(ByteUtils.int16ToByte(duration));
+            byteBuffer.put(ByteUtils.intToByte(priority));
+            for (char c : message.toCharArray()) {
+                byteBuffer.put(ByteUtils.charToByte(c));
+            }
+            // Fin de string en C
+            byteBuffer.put(ByteUtils.intToByte(0));
+
+            write(KissCommand.GET_MESSAGE, KissProtocol.buildRequest(KISS_VERSION, KissCommand.GET_MESSAGE, byteBuffer.array()));
+        }
+
         private void write(KissCommand kissCommand, byte[] bytes) throws SerialPortException {
             for (byte b : bytes) {
                 serialPort.writeByte(b);
@@ -281,6 +306,7 @@ public class KissSimulator {
             logSendCommand(kissCommand, bytes);
         }
 
+        Calendar lastSendMode = Calendar.getInstance();
         private void initTelemetryBuffer() {
             for (int i = 0; i < serialBuffer.length; i++) {
                 serialBuffer[i] = 0;
@@ -298,6 +324,14 @@ public class KissSimulator {
             serialBuffer[16] = ByteUtils.intToByte(readJoystickEvent.getArmed() ? 1 : 0);
             // KISS_INDEX_LIPOVOLT 17 // INT 16
             addInt16AtPosition(17, 1680);
+            if (Calendar.getInstance().getTimeInMillis() - lastSendMode.getTimeInMillis() >= 3000) {
+                lastSendMode = Calendar.getInstance();
+                mode++;
+                if (mode > 5) {
+                    mode = 0;
+                }
+            }
+            serialBuffer[65] = ByteUtils.intToByte(mode);
         }
 
         private void addShortAtPosition(int position, short data) {

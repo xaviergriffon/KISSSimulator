@@ -130,4 +130,8 @@ public class ByteUtils {
         }
         return result;
     }
+
+    public static byte charToByte(char c) {
+        return (byte)c;
+    }
 }

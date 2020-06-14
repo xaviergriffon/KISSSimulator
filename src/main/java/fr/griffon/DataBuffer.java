@@ -88,17 +88,29 @@ public class DataBuffer {
                     break;
                 case len:
                     len = b;
-                    buffer = new byte[len];
-                    cursor = 0;
-                    type = Type.data;
+                    if (b > 0) {
+                        buffer = new byte[len];
+                        cursor = 0;
+                        type = Type.data;
+                    } else {
+                        cursor = 0;
+                        buffer = new byte[Long.BYTES];
+                        type = Type.time;
+                    }
                     break;
                 case data:
-                    buffer[cursor] = b;
-                    cursor++;
-                    if (cursor >= len) {
-                        data.dataHex = ByteUtils.bytesToHex(buffer);
-                        result.add(data);
-                        // Passage au time
+                    if (cursor < buffer.length) {
+                        buffer[cursor] = b;
+                        cursor++;
+                        if (cursor >= len) {
+                            data.dataHex = ByteUtils.bytesToHex(buffer);
+                            result.add(data);
+                            // Passage au time
+                            cursor = 0;
+                            buffer = new byte[Long.BYTES];
+                            type = Type.time;
+                        }
+                    } else {
                         cursor = 0;
                         buffer = new byte[Long.BYTES];
                         type = Type.time;

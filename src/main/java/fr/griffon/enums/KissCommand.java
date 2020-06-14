@@ -21,6 +21,7 @@ public enum KissCommand {
     SET_VTX(0x46),
     GET_DSETPOINT(0x52),
     SET_DSETPOINT(0x53),
+    GET_MESSAGE(0x73),
     UNKNOW(-1);
 
     private static Map<Byte, KissCommand> cache = null;
